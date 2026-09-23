@@ -102,6 +102,11 @@
       cursor: pointer;
     }
 
+    button.submit:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
     button.submit:active {
       opacity: 0.8;
     }
@@ -133,37 +138,70 @@
       placeholder="Nhập thêm cảm nhận của bạn..."
     ></textarea>
 
-    <button class="submit" onclick="submitFeedback()">
+    <button
+      id="submitButton"
+      class="submit"
+      onclick="submitFeedback()"
+    >
       Gửi đánh giá
     </button>
 
   </div>
 
+
   <script>
+
+    // ==============================
+    // TELEGRAM MINI APP
+    // ==============================
 
     const tg = window.Telegram.WebApp;
 
     tg.ready();
     tg.expand();
 
+
+    // ==============================
+    // N8N WEBHOOK
+    // ==============================
+
+    const N8N_WEBHOOK_URL =
+      "https://dbg9.app.n8n.cloud/webhook/telegram-csat";
+
+
+    // ==============================
+    // CHỌN SỐ SAO
+    // ==============================
+
     let selectedScore = 0;
 
-    const stars = document.querySelectorAll(".star");
+    const stars =
+      document.querySelectorAll(".star");
+
 
     stars.forEach(star => {
 
       star.addEventListener("click", () => {
 
-        selectedScore = Number(star.dataset.score);
+        selectedScore =
+          Number(star.dataset.score);
 
         stars.forEach(s => {
+
           s.classList.remove("selected");
+
         });
 
+
         stars.forEach(s => {
 
-          if (Number(s.dataset.score) <= selectedScore) {
+          if (
+            Number(s.dataset.score)
+            <= selectedScore
+          ) {
+
             s.classList.add("selected");
+
           }
 
         });
@@ -173,29 +211,191 @@
     });
 
 
-    function submitFeedback() {
+    // ==============================
+    // GỬI ĐÁNH GIÁ
+    // ==============================
+
+    async function submitFeedback() {
 
       const feedback =
-        document.getElementById("feedback").value;
+        document
+          .getElementById("feedback")
+          .value
+          .trim();
+
+
+      // Kiểm tra số sao
 
       if (selectedScore === 0) {
 
         alert("Vui lòng chọn số sao.");
 
         return;
+
       }
+
+
+      // Nút gửi
+
+      const submitButton =
+        document.getElementById(
+          "submitButton"
+        );
+
+
+      submitButton.disabled = true;
+
+      submitButton.innerText =
+        "Đang gửi...";
+
+
+      // ==============================
+      // LẤY THÔNG TIN TELEGRAM
+      // ==============================
+
+      const user =
+        tg.initDataUnsafe?.user;
+
+
+      const telegramChatId =
+        user?.id
+          ? String(user.id)
+          : "";
+
+
+      const telegramUsername =
+        user?.username
+          ? user.username
+          : "";
+
+
+      const firstName =
+        user?.first_name
+          ? user.first_name
+          : "";
+
+
+      const lastName =
+        user?.last_name
+          ? user.last_name
+          : "";
+
+
+      // ==============================
+      // DỮ LIỆU GỬI SANG N8N
+      // ==============================
 
       const data = {
 
         score: selectedScore,
 
-        feedback: feedback
+        feedback: feedback,
+
+        telegram_chat_id:
+          telegramChatId,
+
+        telegram_username:
+          telegramUsername,
+
+        customer_name:
+          `${firstName} ${lastName}`.trim(),
+
+        submitted_at:
+          new Date().toISOString()
 
       };
 
-      tg.sendData(
-        JSON.stringify(data)
+
+      console.log(
+        "CSAT data:",
+        data
       );
+
+
+      // ==============================
+      // GỬI POST ĐẾN N8N
+      // ==============================
+
+      try {
+
+        const response =
+          await fetch(
+            N8N_WEBHOOK_URL,
+            {
+
+              method: "POST",
+
+              headers: {
+
+                "Content-Type":
+                  "application/json"
+
+              },
+
+              body:
+                JSON.stringify(data)
+
+            }
+          );
+
+
+        // Nếu n8n trả lỗi
+
+        if (!response.ok) {
+
+          const errorText =
+            await response.text();
+
+          console.error(
+            "N8N Error:",
+            errorText
+          );
+
+          throw new Error(
+            "N8N trả về lỗi " +
+            response.status
+          );
+
+        }
+
+
+        // ==============================
+        // THÀNH CÔNG
+        // ==============================
+
+        alert(
+          "Cảm ơn bạn đã gửi đánh giá!"
+        );
+
+
+        // Đóng Mini App
+
+        tg.close();
+
+
+      } catch (error) {
+
+        console.error(
+          "Submit error:",
+          error
+        );
+
+
+        alert(
+          "Không thể gửi đánh giá. " +
+          "Vui lòng thử lại."
+        );
+
+
+        // Cho phép gửi lại
+
+        submitButton.disabled =
+          false;
+
+        submitButton.innerText =
+          "Gửi đánh giá";
+
+      }
 
     }
 
