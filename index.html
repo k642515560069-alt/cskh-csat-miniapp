@@ -41,7 +41,7 @@
 
     h2 {
       text-align: center;
-      margin: 0 0 10px 0;
+      margin: 0 0 10px;
     }
 
     .description {
@@ -74,13 +74,10 @@
       width: 100%;
       min-height: 120px;
       padding: 12px;
-
       border-radius: 10px;
       border: 1px solid #ccc;
-
       font-size: 16px;
       font-family: Arial, sans-serif;
-
       resize: vertical;
 
       background: var(--tg-theme-secondary-bg-color, #ffffff);
@@ -91,7 +88,6 @@
       width: 100%;
       margin-top: 20px;
       padding: 14px;
-
       border: none;
       border-radius: 10px;
 
@@ -105,10 +101,6 @@
     button.submit:disabled {
       opacity: 0.6;
       cursor: not-allowed;
-    }
-
-    button.submit:active {
-      opacity: 0.8;
     }
   </style>
 </head>
@@ -124,13 +116,11 @@
     </div>
 
     <div class="stars">
-
       <button class="star" data-score="1">⭐</button>
       <button class="star" data-score="2">⭐</button>
       <button class="star" data-score="3">⭐</button>
       <button class="star" data-score="4">⭐</button>
       <button class="star" data-score="5">⭐</button>
-
     </div>
 
     <textarea
@@ -148,12 +138,11 @@
 
   </div>
 
-
   <script>
 
-    // ==============================
+    // ==========================================
     // TELEGRAM MINI APP
-    // ==============================
+    // ==========================================
 
     const tg = window.Telegram.WebApp;
 
@@ -161,47 +150,36 @@
     tg.expand();
 
 
-    // ==============================
-    // N8N WEBHOOK
-    // ==============================
+    // ==========================================
+    // N8N PRODUCTION WEBHOOK
+    // ==========================================
 
     const N8N_WEBHOOK_URL =
       "https://dbg9.app.n8n.cloud/webhook/telegram-csat";
 
 
-    // ==============================
+    // ==========================================
     // CHỌN SỐ SAO
-    // ==============================
+    // ==========================================
 
     let selectedScore = 0;
 
-    const stars =
-      document.querySelectorAll(".star");
-
+    const stars = document.querySelectorAll(".star");
 
     stars.forEach(star => {
 
       star.addEventListener("click", () => {
 
-        selectedScore =
-          Number(star.dataset.score);
+        selectedScore = Number(star.dataset.score);
 
         stars.forEach(s => {
-
           s.classList.remove("selected");
-
         });
 
-
         stars.forEach(s => {
 
-          if (
-            Number(s.dataset.score)
-            <= selectedScore
-          ) {
-
+          if (Number(s.dataset.score) <= selectedScore) {
             s.classList.add("selected");
-
           }
 
         });
@@ -211,79 +189,61 @@
     });
 
 
-    // ==============================
+    // ==========================================
     // GỬI ĐÁNH GIÁ
-    // ==============================
+    // ==========================================
 
     async function submitFeedback() {
 
       const feedback =
-        document
-          .getElementById("feedback")
-          .value
-          .trim();
-
+        document.getElementById("feedback").value.trim();
 
       // Kiểm tra số sao
-
       if (selectedScore === 0) {
 
         alert("Vui lòng chọn số sao.");
 
         return;
-
       }
 
 
-      // Nút gửi
-
       const submitButton =
-        document.getElementById(
-          "submitButton"
-        );
-
+        document.getElementById("submitButton");
 
       submitButton.disabled = true;
-
-      submitButton.innerText =
-        "Đang gửi...";
+      submitButton.innerText = "Đang gửi...";
 
 
-      // ==============================
-      // LẤY THÔNG TIN TELEGRAM
-      // ==============================
+      // ==========================================
+      // LẤY THÔNG TIN USER TELEGRAM
+      // ==========================================
 
-      const user =
-        tg.initDataUnsafe?.user;
-
+      const user = tg.initDataUnsafe?.user || {};
 
       const telegramChatId =
-        user?.id
+        user.id
           ? String(user.id)
           : "";
 
-
       const telegramUsername =
-        user?.username
-          ? user.username
+        user.username
+          ? String(user.username)
           : "";
-
 
       const firstName =
-        user?.first_name
-          ? user.first_name
+        user.first_name
+          ? String(user.first_name)
           : "";
-
 
       const lastName =
-        user?.last_name
-          ? user.last_name
+        user.last_name
+          ? String(user.last_name)
           : "";
 
 
-      // ==============================
-      // DỮ LIỆU GỬI SANG N8N
-      // ==============================
+      // ==========================================
+      // TẠO DỮ LIỆU GỬI N8N
+      // ==========================================
 
       const data = {
 
@@ -291,11 +251,9 @@
 
         feedback: feedback,
 
-        telegram_chat_id:
-          telegramChatId,
+        telegram_chat_id: telegramChatId,
 
-        telegram_username:
-          telegramUsername,
+        telegram_username: telegramUsername,
 
         customer_name:
           `${firstName} ${lastName}`.trim(),
@@ -306,40 +264,32 @@
       };
 
 
-      console.log(
-        "CSAT data:",
-        data
-      );
+      console.log("CSAT data:", data);
 
 
-      // ==============================
-      // GỬI POST ĐẾN N8N
-      // ==============================
+      // ==========================================
+      // GỬI POST → N8N
+      // ==========================================
 
       try {
 
-        const response =
-          await fetch(
-            N8N_WEBHOOK_URL,
-            {
+        const response = await fetch(
+          N8N_WEBHOOK_URL,
+          {
+            method: "POST",
 
-              method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
 
-              headers: {
-
-                "Content-Type":
-                  "application/json"
-
-              },
-
-              body:
-                JSON.stringify(data)
-
-            }
-          );
+            body: JSON.stringify(data)
+          }
+        );
 
 
-        // Nếu n8n trả lỗi
+        // ==========================================
+        // KIỂM TRA N8N
+        // ==========================================
 
         if (!response.ok) {
 
@@ -352,23 +302,18 @@
           );
 
           throw new Error(
-            "N8N trả về lỗi " +
-            response.status
+            `N8N trả về lỗi ${response.status}`
           );
-
         }
 
 
-        // ==============================
+        // ==========================================
         // THÀNH CÔNG
-        // ==============================
+        // ==========================================
 
         alert(
           "Cảm ơn bạn đã gửi đánh giá!"
         );
-
-
-        // Đóng Mini App
 
         tg.close();
 
@@ -380,21 +325,14 @@
           error
         );
 
-
         alert(
-          "Không thể gửi đánh giá. " +
-          "Vui lòng thử lại."
+          "Không thể gửi đánh giá. Vui lòng thử lại."
         );
 
-
-        // Cho phép gửi lại
-
-        submitButton.disabled =
-          false;
+        submitButton.disabled = false;
 
         submitButton.innerText =
           "Gửi đánh giá";
-
       }
 
     }
