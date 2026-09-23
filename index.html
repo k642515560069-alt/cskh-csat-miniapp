@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Đánh giá dịch vụ</title>
+
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      font-family: Arial, sans-serif;
+      background: var(--tg-theme-bg-color, #ffffff);
+      color: var(--tg-theme-text-color, #222222);
+    }
+
+    .container {
+      max-width: 500px;
+      margin: auto;
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 10px;
+    }
+
+    .description {
+      text-align: center;
+      margin-bottom: 25px;
+    }
+
+    .stars {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 25px;
+    }
+
+    .star {
+      font-size: 35px;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      opacity: 0.35;
+    }
+
+    .star.selected {
+      opacity: 1;
+    }
+
+    textarea {
+      width: 100%;
+      box-sizing: border-box;
+      min-height: 120px;
+      padding: 12px;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+      font-size: 16px;
+      resize: vertical;
+    }
+
+    button.submit {
+      width: 100%;
+      margin-top: 20px;
+      padding: 14px;
+      border: none;
+      border-radius: 10px;
+      background: #2481cc;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <h2>⭐ Đánh giá dịch vụ</h2>
+
+  <div class="description">
+    Bạn hài lòng với dịch vụ hỗ trợ vừa rồi ở mức nào?
+  </div>
+
+  <div class="stars">
+
+    <button class="star" data-score="1">⭐</button>
+    <button class="star" data-score="2">⭐</button>
+    <button class="star" data-score="3">⭐</button>
+    <button class="star" data-score="4">⭐</button>
+    <button class="star" data-score="5">⭐</button>
+
+  </div>
+
+  <textarea
+    id="feedback"
+    placeholder="Nhập thêm cảm nhận của bạn..."
+  ></textarea>
+
+  <button class="submit" onclick="submitFeedback()">
+    Gửi đánh giá
+  </button>
+
+</div>
+
+<script>
+
+  const tg = window.Telegram.WebApp;
+
+  tg.ready();
+  tg.expand();
+
+  let selectedScore = 0;
+
+  const stars = document.querySelectorAll(".star");
+
+  stars.forEach(star => {
+
+    star.addEventListener("click", () => {
+
+      selectedScore = Number(star.dataset.score);
+
+      stars.forEach(s => {
+        s.classList.remove("selected");
+      });
+
+      stars.forEach(s => {
+
+        if (Number(s.dataset.score) <= selectedScore) {
+          s.classList.add("selected");
+        }
+
+      });
+
+    });
+
+  });
+
+  function submitFeedback() {
+
+    const feedback =
+      document.getElementById("feedback").value;
+
+    if (selectedScore === 0) {
+
+      alert("Vui lòng chọn số sao.");
+
+      return;
+    }
+
+    const data = {
+
+      score: selectedScore,
+
+      feedback: feedback
+
+    };
+
+    tg.sendData(
+      JSON.stringify(data)
+    );
+
+    tg.close();
+
+  }
+
+</script>
+
+</body>
+</html>
